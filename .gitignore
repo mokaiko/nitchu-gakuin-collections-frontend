@@ -1,0 +1,32 @@
+node_modules/
+# Ignores development broadcast logs
+broadcast/
+
+# Docs
+docs/
+
+# Environment
+.env
+.env.local
+.env.example
+
+# Foundry / Forge / Solidity build artefacts
+out/
+artifacts/
+cache/
+dist/
+
+# OS / editor
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.vscode/
+.idea/
+.vercel/
+.turbo/
+coverage/
+.eslintcache
+*.local
+*.log
