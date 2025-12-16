@@ -272,6 +272,7 @@ export default function App() {
     address: "",
     mode: "add" as "add" | "remove",
   });
+  const [formTransferOwner, setFormTransferOwner] = useState("");
 
   return (
     <div className="page-shell">
@@ -447,7 +448,7 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("create")}
                   >
-                    <span className="icon icon-edit" aria-hidden="true" />{" "}
+                    <span className="icon icon-new" aria-hidden="true" />{" "}
                     新規作成
                   </button>
                   <button
@@ -456,8 +457,8 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("svg")}
                   >
-                    <span className="icon icon-edit" aria-hidden="true" /> SVG
-                    アップロード
+                    <span className="icon icon-image" aria-hidden="true" />{" "}
+                    SVGアップロード
                   </button>
                   <button
                     className={
@@ -465,7 +466,7 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("status")}
                   >
-                    <span className="icon icon-edit" aria-hidden="true" />{" "}
+                    <span className="icon icon-toggle" aria-hidden="true" />{" "}
                     状態更新
                   </button>
                   <button
@@ -476,7 +477,7 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("whitelist")}
                   >
-                    <span className="icon icon-edit" aria-hidden="true" />{" "}
+                    <span className="icon icon-list" aria-hidden="true" />{" "}
                     ホワイトリスト
                   </button>
                   <button
@@ -507,7 +508,7 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("contract")}
                   >
-                    <span className="icon icon-contract" aria-hidden="true" />{" "}
+                    <span className="icon icon-settings" aria-hidden="true" />{" "}
                     コントラクト管理
                   </button>
                 </div>
@@ -834,7 +835,7 @@ export default function App() {
                             <input
                               className="input-inline"
                               style={{ flex: "2 1 220px" }}
-                              placeholder="ウォレットアドレス"
+                              placeholder="アドレス"
                               value={whitelistCheck.address}
                               onChange={(e) =>
                                 setWhitelistCheck({
@@ -900,6 +901,7 @@ export default function App() {
                           <textarea
                             rows={2}
                             value={formWhitelist.addresses}
+                            placeholder="0x..., 0x..., 0x..."
                             onChange={(e) =>
                               setFormWhitelist({
                                 ...formWhitelist,
@@ -1001,9 +1003,10 @@ export default function App() {
                             入力上限: 約30KB（{MAX_CHUNK_CHARS}文字目安）
                           </span>
                         </label>
-                        <div style={{ display: "flex", gap: 8 }}>
+                        <div className="split-buttons" style={{ gap: 8 }}>
                           <button
                             className="btn"
+                            style={{ flex: "1 1 240px" }}
                             disabled={!formSvg.tokenId || !formSvg.chunkData}
                             onClick={() =>
                               withTx(async (c) => {
@@ -1023,6 +1026,7 @@ export default function App() {
                           </button>
                           <button
                             className="btn btn-secondary"
+                            style={{ flex: "1 1 240px" }}
                             disabled={!formSvg.tokenId}
                             onClick={() =>
                               withTx(async (c) => {
@@ -1060,6 +1064,7 @@ export default function App() {
                           <textarea
                             rows={2}
                             value={formAirdrop.recipients}
+                            placeholder="0x..., 0x..., 0x..."
                             onChange={(e) =>
                               setFormAirdrop({
                                 ...formAirdrop,
@@ -1153,6 +1158,7 @@ export default function App() {
                           <input
                             className="input-inline"
                             value={formAdmins.address}
+                            placeholder="0x..."
                             onChange={(e) =>
                               setFormAdmins({
                                 ...formAdmins,
@@ -1197,7 +1203,8 @@ export default function App() {
 
                   {adminSection === "contract" ? (
                     <div className="admin-section">
-                      <h3>コントラクト管理（オーナーのみ操作可能）</h3>
+                      <h3>緊急停止（オーナーのみ操作可能）</h3>
+                      <p>緊急時にクレーム・エアドロップを停止可能</p>
                       <p>
                         現在の状態:{" "}
                         {isPaused === undefined
@@ -1206,11 +1213,10 @@ export default function App() {
                           ? "一時停止中"
                           : "稼働中"}
                       </p>
-                      <div
-                        style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
-                      >
+                      <div className="split-buttons">
                         <button
                           className="btn"
+                          style={{ flex: "1 1 240px" }}
                           disabled={!isOwner || isPaused}
                           onClick={() =>
                             withTx(async (c) => {
@@ -1227,6 +1233,7 @@ export default function App() {
                         </button>
                         <button
                           className="btn btn-secondary"
+                          style={{ flex: "1 1 240px" }}
                           disabled={!isOwner || isPaused === false}
                           onClick={() =>
                             withTx(async (c) => {
@@ -1244,6 +1251,40 @@ export default function App() {
                         {!isOwner ? (
                           <div className="hint">※ オーナーのみ実行可能</div>
                         ) : null}
+                      </div>
+                      <div className="section-divider" />
+                      <h3>コントラクト所有権を移転（オーナーのみ操作可能）</h3>
+                      <p>現在のコントラクトオーナー: {ownerAddress ?? "取得中"}</p>
+                      <div style={{ marginTop: 20 }} className="form-grid">
+                        <label style={{ gridColumn: "span 2" }}>
+                          新しいオーナーアドレス
+                          <input
+                            value={formTransferOwner}
+                            onChange={(e) =>
+                              setFormTransferOwner(e.target.value)
+                            }
+                            className="input-inline"
+                            placeholder="0x..."
+                          />
+                        </label>
+                        <button
+                          className="btn"
+                          style={{ gridColumn: "span 2" }}
+                          disabled={!isOwner || !formTransferOwner}
+                          onClick={() =>
+                            withTx(async (c) => {
+                              if (!isOwner) {
+                                setError("オーナーのみ実行できます。");
+                                return;
+                              }
+                              await c.transferOwnership(formTransferOwner);
+                              setOwnerAddress(formTransferOwner);
+                              setFormTransferOwner("");
+                            })
+                          }
+                        >
+                          所有権を移転する
+                        </button>
                       </div>
                     </div>
                   ) : null}

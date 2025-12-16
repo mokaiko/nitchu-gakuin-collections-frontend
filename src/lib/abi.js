@@ -9,6 +9,7 @@ export const COLLECTION_ABI = [
     'function claim(uint256 tokenId)',
     'function getVersion() pure returns (string)',
     'function owner() view returns (address)',
+    'function transferOwnership(address newOwner)',
     'function paused() view returns (bool)',
     'function pause()',
     'function unpause()',
