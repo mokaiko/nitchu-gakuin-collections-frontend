@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toUtf8Bytes } from "ethers";
 
 const MAX_CHUNK_CHARS = 28000; // 約30KB相当（UTF-8文字数ベース）
@@ -273,6 +273,76 @@ export default function App() {
     mode: "add" as "add" | "remove",
   });
   const [formTransferOwner, setFormTransferOwner] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string>("");
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 768);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const formatAddress = (addr: string) => {
+    if (!addr) return "";
+    if (isMobile && addr.length > 10) {
+      return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    }
+    return addr;
+  };
+
+  const renderAddress = (addr?: string, fallback = "取得中", key = "") => {
+    if (!addr) {
+      return <span className="addr-wrap">{fallback}</span>;
+    }
+    const display = formatAddress(addr);
+    const uniqueKey = key || addr;
+    return (
+      <span className="addr-wrap">
+        <span className="addr-text">{display}</span>
+        <button
+          type="button"
+          className="icon-btn copy-btn"
+          aria-label="アドレスをコピー"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(addr);
+            } catch (err) {
+              try {
+                const textarea = document.createElement("textarea");
+                textarea.value = addr;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+              } catch (fallbackErr) {
+                console.error(fallbackErr);
+                setError("コピーに失敗しました。");
+                return;
+              }
+            }
+            setCopiedKey(uniqueKey);
+            if (copyTimerRef.current) {
+              clearTimeout(copyTimerRef.current);
+            }
+            copyTimerRef.current = setTimeout(() => {
+              setCopiedKey("");
+            }, 5000);
+          }}
+        >
+          <span className="icon icon-copy" aria-hidden="true" />
+        </button>
+        {copiedKey === uniqueKey ? (
+          <span className="copy-success">コピーしました</span>
+        ) : null}
+      </span>
+    );
+  };
 
   return (
     <div className="page-shell">
@@ -304,7 +374,7 @@ export default function App() {
             </p>
             <div className="cta-row">
               <div className="network-chip">
-                コントラクト: <strong>{network.contractAddress}</strong>
+                コントラクト: {renderAddress(network.contractAddress, "取得中", "hero-contract")}
               </div>
               {network.explorer ? (
                 <a
@@ -508,26 +578,30 @@ export default function App() {
                     }
                     onClick={() => setAdminSection("contract")}
                   >
-                    <span className="icon icon-settings" aria-hidden="true" />{" "}
-                    コントラクト管理
-                  </button>
-                </div>
-                <div className="admin-body">
-                  <div className="notice">
-                    <div>現在の接続: {account ?? "未接続"}</div>
-                    <div>
-                      接続の権限:{" "}
-                      {isOwner ? "オーナー" : isAdmin ? "管理者" : "なし"}
-                    </div>
+                  <span className="icon icon-settings" aria-hidden="true" />{" "}
+                  コントラクト管理
+                </button>
+              </div>
+              <div className="admin-body">
+                <div className="notice">
+                  <div>
+                    現在の接続: {account ? renderAddress(account, "未接続", "admin-current") : "未接続"}
                   </div>
+                  <div>
+                    接続の権限:{" "}
+                    {isOwner ? "オーナー" : isAdmin ? "管理者" : "なし"}
+                  </div>
+                </div>
                   {txMessage ? <div className="notice">{txMessage}</div> : null}
 
                   {adminSection === "info" ? (
                     <div className="admin-section">
                       <h3>コントラクト情報</h3>
                       <p>ネットワーク: {network.name}</p>
-                      <p>アドレス: {network.contractAddress}</p>
-                      <p>Owner: {ownerAddress ?? "取得中"}</p>
+                      <p>
+                        アドレス: {renderAddress(network.contractAddress, "取得中", "info-contract")}
+                      </p>
+                      <p>オーナー: {renderAddress(ownerAddress, "取得中", "info-owner")}</p>
                       <p>バージョン: {contractVersion ?? "取得中"}</p>
                     </div>
                   ) : null}
@@ -1254,7 +1328,10 @@ export default function App() {
                       </div>
                       <div className="section-divider" />
                       <h3>コントラクト所有権を移転（オーナーのみ操作可能）</h3>
-                      <p>現在のコントラクトオーナー: {ownerAddress ?? "取得中"}</p>
+                      <p>
+                        現在のコントラクトオーナー:{" "}
+                        {renderAddress(ownerAddress, "取得中", "contract-owner")}
+                      </p>
                       <div style={{ marginTop: 20 }} className="form-grid">
                         <label style={{ gridColumn: "span 2" }}>
                           新しいオーナーアドレス

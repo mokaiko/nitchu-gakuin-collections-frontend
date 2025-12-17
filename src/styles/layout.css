@@ -453,8 +453,46 @@
   flex-wrap: wrap;
 }
 
+.addr-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  word-break: break-all;
+}
+
+.addr-text {
+  display: inline-block;
+}
+
+.icon-btn.copy-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.icon-btn.copy-btn:hover {
+  background: var(--surface);
+}
+
+.copy-success {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .icon-settings {
   mask-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"%23000\"><path d=\"M11 2.05a1 1 0 0 1 2 0l.18 1.47a7 7 0 0 1 1.7.7l1.3-.75a1 1 0 0 1 1.37.37l1 1.74a1 1 0 0 1-.37 1.37l-1.26.73c.08.36.12.73.12 1.12 0 .38-.04.75-.12 1.11l1.26.74a1 1 0 0 1 .37 1.36l-1 1.74a1 1 0 0 1-1.37.37l-1.3-.75c-.53.3-1.1.54-1.7.71L13 20a1 1 0 0 1-2 0l-.18-1.47a7 7 0 0 1-1.7-.71l-1.3.75a1 1 0 0 1-1.37-.37l-1-1.74a1 1 0 0 1 .37-1.36l1.26-.74A6.9 6.9 0 0 1 7.7 12c0-.39.04-.76.12-1.12l-1.26-.73a1 1 0 0 1-.37-1.37l1-1.74a1 1 0 0 1 1.37-.37l1.3.75c.53-.3 1.1-.54 1.7-.7L11 2.05Zm1 5.95a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z\"/></svg>');
+}
+
+.icon-copy {
+  mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M9 4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-2v-2h2V4h-7v2H9V4Zm-4 4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8Zm2 0v12h7V8H7Z"/></svg>');
 }
 
 .form-grid input,

@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toUtf8Bytes } from "ethers";
 const MAX_CHUNK_CHARS = 28000; // 約30KB相当（UTF-8文字数ベース）
 import { CollectionCard } from "./components/CollectionCard";
@@ -197,12 +197,67 @@ export default function App() {
         mode: "add",
     });
     const [formTransferOwner, setFormTransferOwner] = useState("");
+    const [isMobile, setIsMobile] = useState(false);
+    const [copiedKey, setCopiedKey] = useState("");
+    const copyTimerRef = useRef(null);
+    useEffect(() => {
+        const handleResize = () => {
+            if (typeof window !== "undefined") {
+                setIsMobile(window.innerWidth < 768);
+            }
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+    const formatAddress = (addr) => {
+        if (!addr)
+            return "";
+        if (isMobile && addr.length > 10) {
+            return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+        }
+        return addr;
+    };
+    const renderAddress = (addr, fallback = "取得中", key = "") => {
+        if (!addr) {
+            return _jsx("span", { className: "addr-wrap", children: fallback });
+        }
+        const display = formatAddress(addr);
+        const uniqueKey = key || addr;
+        return (_jsxs("span", { className: "addr-wrap", children: [_jsx("span", { className: "addr-text", children: display }), _jsx("button", { type: "button", className: "icon-btn copy-btn", "aria-label": "\u30A2\u30C9\u30EC\u30B9\u3092\u30B3\u30D4\u30FC", onClick: async () => {
+                        try {
+                            await navigator.clipboard.writeText(addr);
+                        }
+                        catch (err) {
+                            try {
+                                const textarea = document.createElement("textarea");
+                                textarea.value = addr;
+                                document.body.appendChild(textarea);
+                                textarea.select();
+                                document.execCommand("copy");
+                                document.body.removeChild(textarea);
+                            }
+                            catch (fallbackErr) {
+                                console.error(fallbackErr);
+                                setError("コピーに失敗しました。");
+                                return;
+                            }
+                        }
+                        setCopiedKey(uniqueKey);
+                        if (copyTimerRef.current) {
+                            clearTimeout(copyTimerRef.current);
+                        }
+                        copyTimerRef.current = setTimeout(() => {
+                            setCopiedKey("");
+                        }, 5000);
+                    }, children: _jsx("span", { className: "icon icon-copy", "aria-hidden": "true" }) }), copiedKey === uniqueKey ? (_jsx("span", { className: "copy-success", children: "\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F" })) : null] }));
+    };
     return (_jsxs("div", { className: "page-shell", children: [_jsx(SiteHeader, { onConnect: connect, onDisconnect: disconnect, account: account, isConnecting: isConnecting }), _jsx("main", { className: "content", children: _jsxs("div", { className: "container", children: [_jsxs("div", { className: "page-hero", children: [_jsxs("div", { style: {
                                         display: "flex",
                                         gap: 10,
                                         flexWrap: "wrap",
                                         marginBottom: 8,
-                                    }, children: [_jsx("div", { className: "badge", children: "\u65E5\u4E2D\u5B66\u9662\u30C7\u30B8\u30BF\u30EB\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3" }), _jsx("div", { className: "badge accent", children: "Optimism ERC-1155" })] }), _jsx("h1", { className: "title", children: "\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4E00\u89A7\u3068\u53D7\u3051\u53D6\u308A" }), _jsx("p", { className: "subtitle", children: "Optimism \u4E0A\u306E\u65E5\u4E2D\u5B66\u9662 ERC-1155 \u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u3092\u95B2\u89A7\u30FB\u53D7\u3051\u53D6\u308A\u3067\u304D\u307E\u3059\u3002MetaMask \u3092\u63A5\u7D9A\u3057\u3001\u53D7\u9818\u53EF\u80FD\u306A NFT \u3092\u8ACB\u6C42\u3057\u3066\u304F\u3060\u3055\u3044\u3002" }), _jsxs("div", { className: "cta-row", children: [_jsxs("div", { className: "network-chip", children: ["\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8: ", _jsx("strong", { children: network.contractAddress })] }), network.explorer ? (_jsx("a", { className: "network-chip", href: `${network.explorer}/address/${network.contractAddress}`, target: "_blank", rel: "noreferrer", children: "\u30D6\u30ED\u30C3\u30AF\u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30E9\u30FC" })) : null] })] }), _jsxs("div", { className: "tab-bar", children: [_jsx("button", { className: `tab-btn ${tab === "gallery" ? "active" : ""}`, onClick: () => setTab("gallery"), children: "\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4E00\u89A7" }), _jsx("button", { className: `tab-btn ${tab === "claim" ? "active" : ""}`, onClick: () => setTab("claim"), children: "\u53D7\u3051\u53D6\u308A" }), canAdmin ? (_jsx("button", { className: `tab-btn ${tab === "admin" ? "active" : ""}`, onClick: () => setTab("admin"), children: "\u7BA1\u7406" })) : null] }), _jsxs("div", { className: "panel", children: [_jsxs("div", { className: "cta-row", style: { marginBottom: 8 }, children: [_jsx("div", { className: "section-title", children: tab === "gallery"
+                                    }, children: [_jsx("div", { className: "badge", children: "\u65E5\u4E2D\u5B66\u9662\u30C7\u30B8\u30BF\u30EB\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3" }), _jsx("div", { className: "badge accent", children: "Optimism ERC-1155" })] }), _jsx("h1", { className: "title", children: "\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4E00\u89A7\u3068\u53D7\u3051\u53D6\u308A" }), _jsx("p", { className: "subtitle", children: "Optimism \u4E0A\u306E\u65E5\u4E2D\u5B66\u9662 ERC-1155 \u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u3092\u95B2\u89A7\u30FB\u53D7\u3051\u53D6\u308A\u3067\u304D\u307E\u3059\u3002MetaMask \u3092\u63A5\u7D9A\u3057\u3001\u53D7\u9818\u53EF\u80FD\u306A NFT \u3092\u8ACB\u6C42\u3057\u3066\u304F\u3060\u3055\u3044\u3002" }), _jsxs("div", { className: "cta-row", children: [_jsxs("div", { className: "network-chip", children: ["\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8: ", renderAddress(network.contractAddress, "取得中", "hero-contract")] }), network.explorer ? (_jsx("a", { className: "network-chip", href: `${network.explorer}/address/${network.contractAddress}`, target: "_blank", rel: "noreferrer", children: "\u30D6\u30ED\u30C3\u30AF\u30A8\u30AF\u30B9\u30D7\u30ED\u30FC\u30E9\u30FC" })) : null] })] }), _jsxs("div", { className: "tab-bar", children: [_jsx("button", { className: `tab-btn ${tab === "gallery" ? "active" : ""}`, onClick: () => setTab("gallery"), children: "\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4E00\u89A7" }), _jsx("button", { className: `tab-btn ${tab === "claim" ? "active" : ""}`, onClick: () => setTab("claim"), children: "\u53D7\u3051\u53D6\u308A" }), canAdmin ? (_jsx("button", { className: `tab-btn ${tab === "admin" ? "active" : ""}`, onClick: () => setTab("admin"), children: "\u7BA1\u7406" })) : null] }), _jsxs("div", { className: "panel", children: [_jsxs("div", { className: "cta-row", style: { marginBottom: 8 }, children: [_jsx("div", { className: "section-title", children: tab === "gallery"
                                                 ? "コレクション一覧 (ID 昇順)"
                                                 : tab === "claim"
                                                     ? "受領可能なコレクション"
@@ -212,7 +267,7 @@ export default function App() {
                                                         ? "menu-btn active"
                                                         : "menu-btn", onClick: () => setAdminSection("airdrop"), children: [_jsx("span", { className: "icon icon-gift", "aria-hidden": "true" }), " ", "\u30A8\u30A2\u30C9\u30ED\u30C3\u30D7"] }), _jsxs("button", { className: adminSection === "admins" ? "menu-btn active" : "menu-btn", onClick: () => setAdminSection("admins"), children: [_jsx("span", { className: "icon icon-admin", "aria-hidden": "true" }), " ", "\u7BA1\u7406\u8005\u7BA1\u7406"] }), _jsxs("button", { className: adminSection === "contract"
                                                         ? "menu-btn active"
-                                                        : "menu-btn", onClick: () => setAdminSection("contract"), children: [_jsx("span", { className: "icon icon-settings", "aria-hidden": "true" }), " ", "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u7BA1\u7406"] })] }), _jsxs("div", { className: "admin-body", children: [_jsxs("div", { className: "notice", children: [_jsxs("div", { children: ["\u73FE\u5728\u306E\u63A5\u7D9A: ", account ?? "未接続"] }), _jsxs("div", { children: ["\u63A5\u7D9A\u306E\u6A29\u9650:", " ", isOwner ? "オーナー" : isAdmin ? "管理者" : "なし"] })] }), txMessage ? _jsx("div", { className: "notice", children: txMessage }) : null, adminSection === "info" ? (_jsxs("div", { className: "admin-section", children: [_jsx("h3", { children: "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u60C5\u5831" }), _jsxs("p", { children: ["\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF: ", network.name] }), _jsxs("p", { children: ["\u30A2\u30C9\u30EC\u30B9: ", network.contractAddress] }), _jsxs("p", { children: ["Owner: ", ownerAddress ?? "取得中"] }), _jsxs("p", { children: ["\u30D0\u30FC\u30B8\u30E7\u30F3: ", contractVersion ?? "取得中"] })] })) : null, adminSection === "create" ? (_jsxs("div", { className: "admin-section", children: [_jsx("h3", { children: "\u65B0\u898F\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4F5C\u6210" }), _jsxs("div", { className: "form-grid", children: [_jsxs("label", { children: ["\u540D\u524D", _jsx("input", { value: formCreate.name, onChange: (e) => setFormCreate({
+                                                        : "menu-btn", onClick: () => setAdminSection("contract"), children: [_jsx("span", { className: "icon icon-settings", "aria-hidden": "true" }), " ", "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u7BA1\u7406"] })] }), _jsxs("div", { className: "admin-body", children: [_jsxs("div", { className: "notice", children: [_jsxs("div", { children: ["\u73FE\u5728\u306E\u63A5\u7D9A: ", account ? renderAddress(account, "未接続", "admin-current") : "未接続"] }), _jsxs("div", { children: ["\u63A5\u7D9A\u306E\u6A29\u9650:", " ", isOwner ? "オーナー" : isAdmin ? "管理者" : "なし"] })] }), txMessage ? _jsx("div", { className: "notice", children: txMessage }) : null, adminSection === "info" ? (_jsxs("div", { className: "admin-section", children: [_jsx("h3", { children: "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u60C5\u5831" }), _jsxs("p", { children: ["\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF: ", network.name] }), _jsxs("p", { children: ["\u30A2\u30C9\u30EC\u30B9: ", renderAddress(network.contractAddress, "取得中", "info-contract")] }), _jsxs("p", { children: ["\u30AA\u30FC\u30CA\u30FC: ", renderAddress(ownerAddress, "取得中", "info-owner")] }), _jsxs("p", { children: ["\u30D0\u30FC\u30B8\u30E7\u30F3: ", contractVersion ?? "取得中"] })] })) : null, adminSection === "create" ? (_jsxs("div", { className: "admin-section", children: [_jsx("h3", { children: "\u65B0\u898F\u30B3\u30EC\u30AF\u30B7\u30E7\u30F3\u4F5C\u6210" }), _jsxs("div", { className: "form-grid", children: [_jsxs("label", { children: ["\u540D\u524D", _jsx("input", { value: formCreate.name, onChange: (e) => setFormCreate({
                                                                                 ...formCreate,
                                                                                 name: e.target.value,
                                                                             }) })] }), _jsxs("label", { children: ["\u8AAC\u660E", _jsx("textarea", { value: formCreate.description, onChange: (e) => setFormCreate({
@@ -423,7 +478,7 @@ export default function App() {
                                                                         }
                                                                         await c.unpause();
                                                                         setIsPaused(false);
-                                                                    }), children: "\u518D\u958B (unpause)" }), !isOwner ? (_jsx("div", { className: "hint", children: "\u203B \u30AA\u30FC\u30CA\u30FC\u306E\u307F\u5B9F\u884C\u53EF\u80FD" })) : null] }), _jsx("div", { className: "section-divider" }), _jsx("h3", { children: "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u6240\u6709\u6A29\u3092\u79FB\u8EE2\uFF08\u30AA\u30FC\u30CA\u30FC\u306E\u307F\u64CD\u4F5C\u53EF\u80FD\uFF09" }), _jsxs("p", { children: ["\u73FE\u5728\u306E\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u30AA\u30FC\u30CA\u30FC: ", ownerAddress ?? "取得中"] }), _jsxs("div", { style: { marginTop: 20 }, className: "form-grid", children: [_jsxs("label", { style: { gridColumn: "span 2" }, children: ["\u65B0\u3057\u3044\u30AA\u30FC\u30CA\u30FC\u30A2\u30C9\u30EC\u30B9", _jsx("input", { value: formTransferOwner, onChange: (e) => setFormTransferOwner(e.target.value), className: "input-inline", placeholder: "0x..." })] }), _jsx("button", { className: "btn", style: { gridColumn: "span 2" }, disabled: !isOwner || !formTransferOwner, onClick: () => withTx(async (c) => {
+                                                                    }), children: "\u518D\u958B (unpause)" }), !isOwner ? (_jsx("div", { className: "hint", children: "\u203B \u30AA\u30FC\u30CA\u30FC\u306E\u307F\u5B9F\u884C\u53EF\u80FD" })) : null] }), _jsx("div", { className: "section-divider" }), _jsx("h3", { children: "\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u6240\u6709\u6A29\u3092\u79FB\u8EE2\uFF08\u30AA\u30FC\u30CA\u30FC\u306E\u307F\u64CD\u4F5C\u53EF\u80FD\uFF09" }), _jsxs("p", { children: ["\u73FE\u5728\u306E\u30B3\u30F3\u30C8\u30E9\u30AF\u30C8\u30AA\u30FC\u30CA\u30FC:", " ", renderAddress(ownerAddress, "取得中", "contract-owner")] }), _jsxs("div", { style: { marginTop: 20 }, className: "form-grid", children: [_jsxs("label", { style: { gridColumn: "span 2" }, children: ["\u65B0\u3057\u3044\u30AA\u30FC\u30CA\u30FC\u30A2\u30C9\u30EC\u30B9", _jsx("input", { value: formTransferOwner, onChange: (e) => setFormTransferOwner(e.target.value), className: "input-inline", placeholder: "0x..." })] }), _jsx("button", { className: "btn", style: { gridColumn: "span 2" }, disabled: !isOwner || !formTransferOwner, onClick: () => withTx(async (c) => {
                                                                         if (!isOwner) {
                                                                             setError("オーナーのみ実行できます。");
                                                                             return;
